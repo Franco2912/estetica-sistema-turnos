@@ -26,6 +26,9 @@ services:
     restart: always
     ports:
       - "4000:4000"
+    env_file:
+      - path: ./Backend/.env
+        required: false
     environment:
       PORT: 4000
       DB_HOST: postgres
@@ -35,9 +38,6 @@ services:
       DB_NAME: turnos_multinegocio
       DB_DIALECT: postgres
       JWT_SECRET: clave_secreta_proyecto_integrador
-      EMAIL_USER: ${EMAIL_USER:-}
-      EMAIL_APP_PASSWORD: ${EMAIL_APP_PASSWORD:-}
-      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5}
       OLLAMA_HOST: http://ollama:11434
     volumes:
       - ./Backend:/app
