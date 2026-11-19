@@ -1,0 +1,100 @@
+services:
+  # 1. Base de Datos PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: estetica_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: 12345
+      POSTGRES_DB: turnos_multinegocio
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d turnos_multinegocio"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - red-estetica
+
+  # 2. Nuestro Backend (Node.js)
+  backend:
+    build: ./Backend
+    container_name: estetica_backend
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: 4000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: root
+      DB_PASSWORD: 12345
+      DB_NAME: turnos_multinegocio
+      DB_DIALECT: postgres
+      JWT_SECRET: clave_secreta_proyecto_integrador
+      EMAIL_USER: ${EMAIL_USER:?Definí EMAIL_USER en .env}
+      EMAIL_APP_PASSWORD: ${EMAIL_APP_PASSWORD:?Definí EMAIL_APP_PASSWORD en .env}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:?Definí OLLAMA_MODEL en .env}
+      OLLAMA_HOST: http://ollama:11434
+    volumes:
+      - ./Backend:/app
+      - /app/node_modules # Mantiene los node_modules aislados en el contenedor
+    depends_on:
+      ollama:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - red-estetica
+
+  # 3. Ollama (Servidor de LLM)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama_local
+    restart: always
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    networks:
+      - red-estetica
+      
+  # 4. Frontend (Vite)
+  frontend:
+    build: ./Frontend
+    container_name: estetica_frontend
+    restart: always
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:4000/api
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - red-estetica
+
+volumes:
+  postgres_data:
+  ollama_data:
+
+networks:
+  red-estetica:
+    driver: bridge
