@@ -2,7 +2,6 @@ services:
   # 1. Base de Datos PostgreSQL
   postgres:
     image: postgres:15-alpine
-    container_name: estetica_postgres
     restart: always
     environment:
       POSTGRES_USER: root
@@ -24,7 +23,6 @@ services:
   # 2. Nuestro Backend (Node.js)
   backend:
     build: ./Backend
-    container_name: estetica_backend
     restart: always
     ports:
       - "4000:4000"
@@ -37,9 +35,9 @@ services:
       DB_NAME: turnos_multinegocio
       DB_DIALECT: postgres
       JWT_SECRET: clave_secreta_proyecto_integrador
-      EMAIL_USER: ${EMAIL_USER:?Definí EMAIL_USER en .env}
-      EMAIL_APP_PASSWORD: ${EMAIL_APP_PASSWORD:?Definí EMAIL_APP_PASSWORD en .env}
-      OLLAMA_MODEL: ${OLLAMA_MODEL:?Definí OLLAMA_MODEL en .env}
+      EMAIL_USER: ${EMAIL_USER:-}
+      EMAIL_APP_PASSWORD: ${EMAIL_APP_PASSWORD:-}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5}
       OLLAMA_HOST: http://ollama:11434
     volumes:
       - ./Backend:/app
@@ -61,7 +59,6 @@ services:
   # 3. Ollama (Servidor de LLM)
   ollama:
     image: ollama/ollama:latest
-    container_name: ollama_local
     restart: always
     ports:
       - "11434:11434"
@@ -79,7 +76,6 @@ services:
   # 4. Frontend (Vite)
   frontend:
     build: ./Frontend
-    container_name: estetica_frontend
     restart: always
     ports:
       - "5173:5173"
