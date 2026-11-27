@@ -89,6 +89,25 @@ services:
     networks:
       - red-estetica
 
+  # 5. Túnel HTTPS opcional de ngrok al frontend.
+  ngrok:
+    image: ngrok/ngrok:latest
+    restart: unless-stopped
+    profiles:
+      - tunnel
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
+    command:
+      - http
+      - --url=${NGROK_DOMAIN:-}
+      - --log=stdout
+      - frontend:5173
+    depends_on:
+      frontend:
+        condition: service_started
+    networks:
+      - red-estetica
+
 volumes:
   postgres_data:
   ollama_data:
